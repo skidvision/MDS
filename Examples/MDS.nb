@@ -1,0 +1,1036 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 6.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[     30970,       1027]
+NotebookOptionsPosition[     25643,        846]
+NotebookOutlinePosition[     26423,        873]
+CellTagsIndexPosition[     26380,        870]
+WindowFrame->Normal
+ContainsDynamic->False*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Multi Dimensional Scaling Package", "Title",
+ InitializationCell->True],
+
+Cell["\<\
+flip phillips
+15march99\
+\>", "Subsubtitle",
+ InitializationCell->True],
+
+Cell[CellGroupData[{
+
+Cell["Standard WRI Header stuff", "Section",
+ InitializationCell->True],
+
+Cell["I'm using CVS / SVN so this stuff gets slugged in", "Text",
+ InitializationCell->True,
+ CellChangeTimes->{{3.4064976393521*^9, 3.406497640611329*^9}}],
+
+Cell["\<\
+(* :Title: Multidimensional Scaling Tools *)
+
+(* :Context: ExpTools`MDS` *)
+
+(* :Author: Flip Phillips
+\tRecent modifications of $Date: 2004-11-27 01:18:52 -0500 (Sat, 27 Nov 2004) \
+$ by $Author: flip $ *)
+
+(* :Summary: 
+\tThis package provides various signal detection theory function to \
+Mathematica.
+*)
+
+(* :Package Version: $Revision: 21 $ *)
+
+(* :Mathematica Version: 6.0 *)
+
+(* :Copyright: Copyright 1999-2007, Flip Phillips, All Rights Reserved.  *)
+
+(* :History: 
+$Log: MDS.nb,v $
+Revision 1.3  1999/03/17 03:36:00  cvs
+Fixed constant function to be less of a memory hog
+
+Revision 1.2  1999/03/16 19:15:44  cvs
+fixed external creation of symbol that had list of exported functions
+
+Revision 1.1  1999/03/16 14:46:27  cvs
+first checkin since transfer from development dir
+
+Revision 1.3  1999/03/15 23:45:47  cvs
+migrated to Packages directory
+
+Revision 1.2  1999/03/15 16:32:57  cvs
+started integration into package form
+
+*)
+
+(* :Keywords:
+\tpackages, path, keywords
+*)
+
+(* :Limitations:  *)
+
+(* :Discussion:  *)\
+\>", "Input",
+ InitializationCell->True,
+ CellChangeTimes->{{3.406497532389352*^9, 3.406497538121172*^9}},
+ AspectRatioFixed->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["References", "Section"],
+
+Cell[TextData[{
+ "This package is designed for doing MDS calculations, based on equations \
+from:\n N. A. Macmillan & C. D. Creelman (1991).",
+ StyleBox["Detection Theory: A User's Guide",
+  FontWeight->"Bold"],
+ ", Cambridge University Press."
+}], "Text",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["The MDS Package", "Section",
+ InitializationCell->True],
+
+Cell[CellGroupData[{
+
+Cell["Set up the package context, including any imports", "Subsection",
+ InitializationCell->True],
+
+Cell["BeginPackage[\"ExpTools`MDS`\"]", "Input",
+ InitializationCell->True,
+ CellChangeTimes->{{3.406497549648342*^9, 3.406497552399975*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Usage Messages", "Subsection",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MDS", "::", "usage"}], "=", 
+  "\"\<MDS.m is a package which provides a few tools for doing \
+multidimensional scaling.\>\""}]], "Input",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MultidimensionalScaling", "::", "usage"}], "=", 
+  "\"\<MultidimensionalScaling[data,dimensions] takes the dissimilarity \
+matrix in 'data' and creates an initial configuration in 'dimensions' \
+dimensions\>\""}]], "Input",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MDSModel", "::", "usage"}], "=", 
+  "\"\<MDSModel[data,dimensions] represents the multidimensional scaling \
+model.\>\""}]], "Input",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"IterateMDS", "::", "usage"}], "=", 
+  "\"\<IterateMDS[model,times] Iterates the MDS model 'times' times.\>\""}]], \
+"Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Begin the private context", "Subsection",
+ InitializationCell->True],
+
+Cell["Begin[\"`Private`\"]", "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Unprotect any system functions for which rules will be defined\
+\>", "Subsection",
+ InitializationCell->True],
+
+Cell["Prevent re-load problems", "Text",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Unprotect", "[", 
+   RowBox[{"{", 
+    RowBox[{"MultidimensionalScaling", ",", "IterateMDS", ",", "MDSModel"}], 
+    "}"}], "]"}], ";"}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Definition of auxiliary functions and local (static) variables\
+\>", "Subsection",
+ InitializationCell->True],
+
+Cell[CellGroupData[{
+
+Cell["Matrix tools", "Subsubsection"],
+
+Cell["\<\
+Zero the diagonal and divide the whole stinking match by the SD of the result\
+\
+\>", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"ZeroDiagonal", "[", "m_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "mm", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"mm", "=", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{"IdentityMatrix", "[", 
+          RowBox[{
+           RowBox[{"Dimensions", "[", "m", "]"}], "\[LeftDoubleBracket]", "1",
+            "\[RightDoubleBracket]"}], "]"}]}], ")"}], "m"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"mm", "/", 
+      RowBox[{"StandardDeviation", "[", 
+       RowBox[{"Flatten", "[", "mm", "]"}], "]"}]}]}]}], "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell["\<\
+This takes a list of column-based observation means and makes a symmetric \
+matrix from them...\
+\>", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MakeSymmetric", "[", "m_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "ms", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"ms", "=", 
+      SuperscriptBox["m", "2"]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"ms", "+", 
+         RowBox[{"Transpose", "[", "ms", "]"}]}], ")"}], "/", "2"}], 
+      "]"}]}]}], "]"}]}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Make special matricies", "Subsubsection"],
+
+Cell["This is a double-centering", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MakeBstar", "[", "m_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"m2", ",", "means", ",", "mmeans", ",", "n"}], "}"}], ",", 
+    RowBox[{
+     RowBox[{"n", "=", 
+      RowBox[{
+       RowBox[{"Dimensions", "[", "m", "]"}], "\[LeftDoubleBracket]", "1", 
+       "\[RightDoubleBracket]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"m2", "=", 
+      SuperscriptBox["m", "2"]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"means", "=", 
+      RowBox[{"Map", "[", 
+       RowBox[{"Mean", ",", "m2"}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"mmeans", "=", 
+      RowBox[{"Table", "[", 
+       RowBox[{"means", ",", 
+        RowBox[{"{", "n", "}"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"m2", "-", "mmeans", "-", 
+          RowBox[{"Transpose", "[", "mmeans", "]"}]}], ")"}], "+", 
+        RowBox[{"Mean", "[", "means", "]"}]}], ")"}], "/", 
+      RowBox[{"-", "2"}]}]}]}], "\[IndentingNewLine]", "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell[TextData[{
+ "Make the coordinate list from the ",
+ Cell[BoxData[
+  FormBox[
+   SuperscriptBox["B", "*"], TraditionalForm]]],
+ "matrix"
+}], "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MakeCoordinates", "[", "bstar_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"u", ",", "\[Gamma]", ",", "v"}], "}"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"u", ",", "\[Gamma]", ",", "v"}], "}"}], "=", 
+      RowBox[{"SingularValues", "[", 
+       RowBox[{"bstar", ",", 
+        RowBox[{"Tolerance", "\[Rule]", "0"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"ColumnDrop", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Transpose", "[", "u", "]"}], ".", 
+          RowBox[{"DiagonalMatrix", "[", 
+           RowBox[{"Sqrt", "[", "\[Gamma]", "]"}], "]"}]}], ",", 
+         RowBox[{"-", "1"}]}], "]"}], ",", "\[Gamma]"}], "}"}]}]}], 
+   "\[IndentingNewLine]", "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell["\<\
+given the square matrix of dissimilarities and a configuration matrix X, this \
+function will make the necessary B matrix found in the Heiser and de Leeuw \
+(1979) article.\
+\>", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MakeB", "[", 
+   RowBox[{"x_", ",", "disdata_"}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"dm", ",", "mD", ",", "mB"}], "}"}], ",", "\[IndentingNewLine]", 
+    
+    RowBox[{
+     RowBox[{"dm", "=", 
+      RowBox[{"MakeDistances", "[", "x", "]"}]}], ";", "\[IndentingNewLine]", 
+     
+     RowBox[{"(*", " ", 
+      RowBox[{"add", " ", "identity", " ", "to", " ", "keep", " ", 
+       RowBox[{"div", "/", "0"}], " ", "from", " ", "happening"}], " ", 
+      "*)"}], "\[IndentingNewLine]", 
+     RowBox[{"mD", "=", 
+      RowBox[{"dm", "+", 
+       RowBox[{"IdentityMatrix", "[", 
+        RowBox[{"Length", "[", "dm", "]"}], "]"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"mB", "=", 
+      RowBox[{
+       RowBox[{"-", "2"}], 
+       RowBox[{"(", 
+        RowBox[{"disdata", "/", "mD"}], ")"}]}]}], ";", "\[IndentingNewLine]",
+      
+     RowBox[{"mB", "+", 
+      RowBox[{"DiagonalMatrix", "[", 
+       RowBox[{"-", 
+        RowBox[{"Map", "[", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"Apply", "[", 
+            RowBox[{"Plus", ",", "#"}], "]"}], "&"}], ",", "mB"}], "]"}]}], 
+       "]"}]}]}]}], "\[IndentingNewLine]", "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell["Guttman transform - this is what gets iterated...", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"GuttmanTransform", "[", 
+   RowBox[{"x_", ",", "disdata_"}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"bxdot", ",", "n"}], "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"n", "=", 
+      RowBox[{"Length", "[", "x", "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{
+      FractionBox["1", 
+       RowBox[{"2", "n"}]], 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"MakeB", "[", 
+         RowBox[{"x", ",", "disdata"}], "]"}], ".", "x"}], ")"}]}]}]}], 
+   "]"}]}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Distance metrics", "Subsubsection"],
+
+Cell["Some utility functions for computing distance", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"length", "[", "v_", "]"}], ":=", 
+   RowBox[{"Sqrt", "[", 
+    RowBox[{"v", ".", "v"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"distance", "[", 
+    RowBox[{"{", 
+     RowBox[{"p1_", ",", "p2_"}], "}"}], "]"}], ":=", 
+   RowBox[{"length", "[", 
+    RowBox[{"p1", "-", "p2"}], "]"}]}], ";"}]}], "Input",
+ InitializationCell->True],
+
+Cell["Not the most efficent... but it works for now.", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MakeDistances", "[", "x_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "n", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"n", "=", 
+      RowBox[{"Length", "[", "x", "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Table", "[", 
+      RowBox[{
+       RowBox[{"distance", "[", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"x", "\[LeftDoubleBracket]", "i", "\[RightDoubleBracket]"}],
+           ",", 
+          RowBox[{
+          "x", "\[LeftDoubleBracket]", "j", "\[RightDoubleBracket]"}]}], 
+         "}"}], "]"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"i", ",", "1", ",", "n"}], "}"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"j", ",", "1", ",", "n"}], "}"}]}], "]"}]}]}], 
+   "]"}]}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Constants function", "Subsubsection"],
+
+Cell["\<\
+I'm not entirely sure what this does, however, in Forrest's code this is \
+there, so I feel it necessary\
+\>", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"SubtractList", "[", "l_List", "]"}], ":=", 
+  RowBox[{"Fold", "[", 
+   RowBox[{"Subtract", ",", 
+    RowBox[{"First", "[", "l", "]"}], ",", 
+    RowBox[{"Rest", "[", "l", "]"}]}], "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"AddConstantsFunction", "[", "m_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"d", ",", "parts", ",", "lists"}], "}"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"d", "=", 
+      RowBox[{
+       RowBox[{"Dimensions", "[", "m", "]"}], "\[LeftDoubleBracket]", "1", 
+       "\[RightDoubleBracket]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"parts", "=", 
+      RowBox[{"Flatten", "[", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"Table", "[", 
+         RowBox[{
+          RowBox[{"{", "\[IndentingNewLine]", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"a", "+", "1"}], ",", 
+              RowBox[{"(", 
+               RowBox[{"a", "+", "b", "+", "2"}], ")"}]}], "}"}], ",", 
+            "\[IndentingNewLine]", 
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"(", 
+               RowBox[{"a", "+", "b", "+", "2"}], ")"}], ",", 
+              RowBox[{"(", 
+               RowBox[{"a", "+", "b", "+", "c", "+", "3"}], ")"}]}], "}"}], 
+            ",", "\[IndentingNewLine]", 
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"a", "+", "1"}], ",", 
+              RowBox[{"(", 
+               RowBox[{"a", "+", "b", "+", "c", "+", "3"}], ")"}]}], "}"}]}], 
+           "}"}], ",", "\[IndentingNewLine]", 
+          RowBox[{"{", 
+           RowBox[{"a", ",", "0", ",", 
+            RowBox[{"d", "-", "3"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"b", ",", "0", ",", 
+            RowBox[{"d", "-", "a", "-", "3"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"c", ",", "0", ",", 
+            RowBox[{"d", "-", "a", "-", "b", "-", "3"}]}], "}"}]}], "]"}], 
+        ",", "2"}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"lists", "=", 
+      RowBox[{"Map", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Sort", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"m", "\[LeftDoubleBracket]", 
+              RowBox[{
+               RowBox[{"#", "\[LeftDoubleBracket]", 
+                RowBox[{"1", ",", "1"}], "\[RightDoubleBracket]"}], ",", 
+               RowBox[{"#", "\[LeftDoubleBracket]", 
+                RowBox[{"1", ",", "2"}], "\[RightDoubleBracket]"}]}], 
+              "\[RightDoubleBracket]"}], ",", 
+             RowBox[{"m", "\[LeftDoubleBracket]", 
+              RowBox[{
+               RowBox[{"#", "\[LeftDoubleBracket]", 
+                RowBox[{"2", ",", "1"}], "\[RightDoubleBracket]"}], ",", 
+               RowBox[{"#", "\[LeftDoubleBracket]", 
+                RowBox[{"2", ",", "2"}], "\[RightDoubleBracket]"}]}], 
+              "\[RightDoubleBracket]"}], ",", 
+             RowBox[{"m", "\[LeftDoubleBracket]", 
+              RowBox[{
+               RowBox[{"#", "\[LeftDoubleBracket]", 
+                RowBox[{"3", ",", "1"}], "\[RightDoubleBracket]"}], ",", 
+               RowBox[{"#", "\[LeftDoubleBracket]", 
+                RowBox[{"3", ",", "2"}], "\[RightDoubleBracket]"}]}], 
+              "\[RightDoubleBracket]"}]}], "}"}], ",", "Greater"}], "]"}], 
+         "&"}], ",", "parts"}], "]"}]}], ";", "\[IndentingNewLine]", 
+     "\[IndentingNewLine]", 
+     RowBox[{"Max", "[", 
+      RowBox[{"Append", "[", 
+       RowBox[{
+        RowBox[{"{", "0", "}"}], ",", 
+        RowBox[{"Map", "[", 
+         RowBox[{"SubtractList", ",", "lists"}], "]"}]}], "]"}], "]"}]}]}], 
+   "\[IndentingNewLine]", "]"}]}]], "Input"],
+
+Cell["This is a more space-efficient version", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"AddConstantsFunction", "[", "m_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"d", ",", "a", ",", "b", ",", "c"}], "}"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"d", "=", 
+      RowBox[{
+       RowBox[{"Dimensions", "[", "m", "]"}], "\[LeftDoubleBracket]", "1", 
+       "\[RightDoubleBracket]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Max", "[", 
+      RowBox[{"Append", "[", 
+       RowBox[{
+        RowBox[{"{", "0", "}"}], ",", 
+        RowBox[{"Flatten", "[", "\[IndentingNewLine]", 
+         RowBox[{
+          RowBox[{"Table", "[", 
+           RowBox[{
+            RowBox[{"SubtractList", "[", 
+             RowBox[{"Sort", "[", 
+              RowBox[{
+               RowBox[{"{", "\[IndentingNewLine]", 
+                RowBox[{
+                 RowBox[{"m", "\[LeftDoubleBracket]", 
+                  RowBox[{
+                   RowBox[{"a", "+", "1"}], ",", 
+                   RowBox[{"(", 
+                    RowBox[{"a", "+", "b", "+", "2"}], ")"}]}], 
+                  "\[RightDoubleBracket]"}], ",", "\[IndentingNewLine]", 
+                 RowBox[{"m", "\[LeftDoubleBracket]", 
+                  RowBox[{
+                   RowBox[{"(", 
+                    RowBox[{"a", "+", "b", "+", "2"}], ")"}], ",", 
+                   RowBox[{"(", 
+                    RowBox[{"a", "+", "b", "+", "c", "+", "3"}], ")"}]}], 
+                  "\[RightDoubleBracket]"}], ",", "\[IndentingNewLine]", 
+                 RowBox[{"m", "\[LeftDoubleBracket]", 
+                  RowBox[{
+                   RowBox[{"a", "+", "1"}], ",", 
+                   RowBox[{"(", 
+                    RowBox[{"a", "+", "b", "+", "c", "+", "3"}], ")"}]}], 
+                  "\[RightDoubleBracket]"}]}], "}"}], ",", "Greater"}], "]"}],
+              "]"}], ",", "\[IndentingNewLine]", 
+            RowBox[{"{", 
+             RowBox[{"a", ",", "0", ",", 
+              RowBox[{"d", "-", "3"}]}], "}"}], ",", 
+            RowBox[{"{", 
+             RowBox[{"b", ",", "0", ",", 
+              RowBox[{"d", "-", "a", "-", "3"}]}], "}"}], ",", 
+            RowBox[{"{", 
+             RowBox[{"c", ",", "0", ",", 
+              RowBox[{"d", "-", "a", "-", "b", "-", "3"}]}], "}"}]}], "]"}], 
+          ",", "2"}], "]"}]}], "]"}], "]"}]}]}], "\[IndentingNewLine]", 
+   "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell["Also a wierd function", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"TransformByConstant", "[", "m_", "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "constant", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"constant", "=", 
+      RowBox[{"AddConstantsFunction", "[", "m", "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"ZeroDiagonal", "[", 
+      RowBox[{"m", "+", "constant"}], "]"}]}]}], "\[IndentingNewLine]", 
+   "]"}]}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Stress function", "Subsubsection"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"CalcStress", "[", 
+   RowBox[{"x_", ",", "distdata_"}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "dists", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"dists", "=", 
+      RowBox[{"MakeDistances", "[", "x", "]"}]}], ";", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"Plus", "@@", 
+         RowBox[{"Flatten", "[", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"distdata", "-", "dists"}], ")"}], "2"], "]"}]}], ")"}], 
+       "/", 
+       RowBox[{"(", 
+        RowBox[{"Plus", "@@", 
+         RowBox[{"Flatten", "[", 
+          SuperscriptBox[
+           RowBox[{"(", "distdata", ")"}], "2"], "]"}]}], ")"}]}], "]"}]}]}], 
+   "\[IndentingNewLine]", "]"}]}]], "Input",
+ InitializationCell->True]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Error messages for the exported objects", "Subsection",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"MDS", "::", "Dimension"}], "=", 
+   "\"\<Invalid number of dimensions \\\"`1`\\\"\>\""}], ";"}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Formatting", "Subsection"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Format", "[", "t_MDSModel", "]"}], ":=", 
+  "\"\<MDSModel[<>]\>\""}]], "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Definition of the exported functions", "Subsection",
+ InitializationCell->True],
+
+Cell[CellGroupData[{
+
+Cell["Model function", "Subsubsection"],
+
+Cell["\<\
+Returns: xmatrix- the initial configuration of the data
+\ttdata- the adjusted distances between all stimuli computed from the \
+difference data
+\tgamma- the eigenvalues of the system, ie- how much variance is accounted \
+for by each dimension
+\tstress- initial stress value\
+\>", "Text"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MDSModel", "[", 
+   RowBox[{"m_", ",", "dimen_"}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+     "bstar", ",", "xmatrix", ",", "umtx", ",", "tdata", ",", "stress", ",", 
+      "\[Gamma]"}], "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"If", "[", 
+      RowBox[{
+       RowBox[{"dimen", "\[GreaterEqual]", 
+        RowBox[{
+         RowBox[{"Dimensions", "[", "m", "]"}], "\[LeftDoubleBracket]", "1", 
+         "\[RightDoubleBracket]"}]}], ",", 
+       RowBox[{
+        RowBox[{"Message", "[", 
+         RowBox[{
+          RowBox[{"MDS", "::", "Dimension"}], ",", "dimen"}], "]"}], ";", 
+        RowBox[{"Return", "[", 
+         RowBox[{"{", "}"}], "]"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"umtx", "=", 
+      RowBox[{"ZeroDiagonal", "[", 
+       RowBox[{"MakeSymmetric", "[", "m", "]"}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"tdata", "=", 
+      RowBox[{"TransformByConstant", "[", "umtx", "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"bstar", "=", 
+      RowBox[{"MakeBstar", "[", "umtx", "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"xmatrix", ",", "\[Gamma]"}], "}"}], "=", 
+      RowBox[{"MakeCoordinates", "[", 
+       RowBox[{"N", "[", "bstar", "]"}], "]"}]}], ";", 
+     RowBox[{"xmatrix", "=", 
+      RowBox[{"ColumnTake", "[", 
+       RowBox[{"xmatrix", ",", 
+        RowBox[{"{", 
+         RowBox[{"1", ",", "dimen"}], "}"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"stress", "=", 
+      RowBox[{"CalcStress", "[", 
+       RowBox[{"xmatrix", ",", "tdata"}], "]"}]}], ";", "\[IndentingNewLine]",
+      "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{"xmatrix", ",", "tdata", ",", "\[Gamma]", ",", "stress"}], 
+      "}"}]}]}], "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MultidimensionalScaling", "[", 
+   RowBox[{"m_", ",", "d_Integer"}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "dataM", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{"MDSModel", "[", 
+     RowBox[{
+      RowBox[{"If", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Length", "[", 
+          RowBox[{"m", "\[LeftDoubleBracket]", 
+           RowBox[{"1", ",", "1"}], "\[RightDoubleBracket]"}], "]"}], 
+         "\[NotEqual]", "0"}], ",", 
+        RowBox[{"Map", "[", 
+         RowBox[{"Mean", ",", "m", ",", 
+          RowBox[{"{", "2", "}"}]}], "]"}], ",", "m"}], "]"}], ",", "d"}], 
+     "]"}]}], "]"}]}]], "Input",
+ InitializationCell->True],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"IterateMDS", "[", 
+   RowBox[{"model_", ",", 
+    RowBox[{"times_Integer:", "1"}]}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"newx", ",", "news"}], "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"Do", "[", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"newx", "=", 
+         RowBox[{"GuttmanTransform", "[", 
+          RowBox[{
+           RowBox[{
+           "model", "\[LeftDoubleBracket]", "1", "\[RightDoubleBracket]"}], 
+           ",", 
+           RowBox[{
+           "model", "\[LeftDoubleBracket]", "2", "\[RightDoubleBracket]"}]}], 
+          "]"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"news", "=", 
+         RowBox[{"CalcStress", "[", 
+          RowBox[{"newx", ",", 
+           RowBox[{
+           "model", "\[LeftDoubleBracket]", "2", "\[RightDoubleBracket]"}]}], 
+          "]"}]}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", "times", "}"}]}], "]"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{"newx", ",", 
+       RowBox[{
+       "model", "\[LeftDoubleBracket]", "2", "\[RightDoubleBracket]"}], ",", 
+       RowBox[{
+       "model", "\[LeftDoubleBracket]", "3", "\[RightDoubleBracket]"}], ",", 
+       "news"}], "}"}]}]}], "]"}]}]], "Input",
+ InitializationCell->True]
+}, Open  ]]
+}, Open  ]],
+
+Cell["Rules for the system functions", "Subsection",
+ InitializationCell->True],
+
+Cell["Restore protection of system functions", "Subsection",
+ InitializationCell->True],
+
+Cell[CellGroupData[{
+
+Cell["End the private context", "Subsection",
+ InitializationCell->True],
+
+Cell["End[]", "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Protect exoprted symbols", "Subsection",
+ InitializationCell->True],
+
+Cell["Protect[{MultidimensionalScaling,IterateMDS,MDSModel}];", "Input",
+ InitializationCell->True]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["End the package context", "Subsection",
+ InitializationCell->True],
+
+Cell["EndPackage[]", "Input",
+ InitializationCell->True]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+AutoGeneratedPackage->Automatic,
+WindowToolbars->{},
+WindowSize->{840, 648},
+WindowMargins->{{Automatic, 165}, {Automatic, 0}},
+PrivateNotebookOptions->{"ColorPalette"->{RGBColor, -1}},
+ShowCellLabel->True,
+ShowCellTags->False,
+RenderingOptions->{"ObjectDithering"->True,
+"RasterDithering"->False},
+MacintoshSystemPageSetup -> \
+"00<0001804P000000]P2:?oQon82n@960dL5:0?l0080001804P000000]P2:001\n\
+0000I00000400`<300000BL?00400@00000000000000060801T1T00000000000\n\
+00000000000000000000000000000000",
+Magnification->1,
+FrontEndVersion->"6.0 for Mac OS X x86 (32-bit) (June 19, 2007)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[590, 23, 77, 1, 76, "Title",
+ InitializationCell->True],
+Cell[670, 26, 81, 4, 43, "Subsubtitle",
+ InitializationCell->True],
+Cell[CellGroupData[{
+Cell[776, 34, 71, 1, 67, "Section",
+ InitializationCell->True],
+Cell[850, 37, 156, 2, 26, "Text",
+ InitializationCell->True],
+Cell[1009, 41, 1163, 49, 573, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2209, 95, 29, 0, 67, "Section"],
+Cell[2241, 97, 283, 7, 41, "Text",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2561, 109, 61, 1, 67, "Section",
+ InitializationCell->True],
+Cell[CellGroupData[{
+Cell[2647, 114, 98, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[2748, 117, 141, 2, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2926, 124, 63, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[2992, 127, 199, 5, 27, "Input",
+ InitializationCell->True],
+Cell[3194, 134, 285, 6, 58, "Input",
+ InitializationCell->True],
+Cell[3482, 142, 195, 5, 27, "Input",
+ InitializationCell->True],
+Cell[3680, 149, 186, 5, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3903, 159, 74, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[3980, 162, 64, 1, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4081, 168, 119, 3, 34, "Subsection",
+ InitializationCell->True],
+Cell[4203, 173, 67, 1, 26, "Text",
+ InitializationCell->True],
+Cell[4273, 176, 209, 6, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4519, 187, 119, 3, 34, "Subsection",
+ InitializationCell->True],
+Cell[CellGroupData[{
+Cell[4663, 194, 37, 0, 25, "Subsubsection"],
+Cell[4703, 196, 103, 3, 26, "Text"],
+Cell[4809, 201, 679, 19, 58, "Input",
+ InitializationCell->True],
+Cell[5491, 222, 119, 3, 26, "Text"],
+Cell[5613, 227, 497, 15, 70, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6147, 247, 47, 0, 25, "Subsubsection"],
+Cell[6197, 249, 42, 0, 26, "Text"],
+Cell[6242, 251, 1116, 29, 116, "Input",
+ InitializationCell->True],
+Cell[7361, 282, 151, 6, 26, "Text"],
+Cell[7515, 290, 902, 26, 73, "Input",
+ InitializationCell->True],
+Cell[8420, 318, 196, 4, 41, "Text"],
+Cell[8619, 324, 1270, 37, 118, "Input",
+ InitializationCell->True],
+Cell[9892, 363, 65, 0, 26, "Text"],
+Cell[9960, 365, 600, 19, 87, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[10597, 389, 41, 0, 25, "Subsubsection"],
+Cell[10641, 391, 61, 0, 26, "Text"],
+Cell[10705, 393, 410, 13, 43, "Input",
+ InitializationCell->True],
+Cell[11118, 408, 62, 0, 26, "Text"],
+Cell[11183, 410, 825, 24, 58, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[12045, 439, 43, 0, 25, "Subsubsection"],
+Cell[12091, 441, 128, 3, 26, "Text"],
+Cell[12222, 446, 260, 7, 27, "Input",
+ InitializationCell->True],
+Cell[12485, 455, 3525, 86, 208, "Input"],
+Cell[16013, 543, 54, 0, 26, "Text"],
+Cell[16070, 545, 2397, 57, 148, "Input",
+ InitializationCell->True],
+Cell[18470, 604, 37, 0, 26, "Text"],
+Cell[18510, 606, 477, 13, 73, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[19024, 624, 40, 0, 25, "Subsubsection"],
+Cell[19067, 626, 834, 25, 89, "Input",
+ InitializationCell->True]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[19950, 657, 88, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[20041, 660, 180, 5, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[20258, 670, 32, 0, 34, "Subsection"],
+Cell[20293, 672, 141, 4, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[20471, 681, 85, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[CellGroupData[{
+Cell[20581, 686, 39, 0, 25, "Subsubsection"],
+Cell[20623, 688, 297, 7, 71, "Text"],
+Cell[20923, 697, 1897, 50, 148, "Input",
+ InitializationCell->True],
+Cell[22823, 749, 715, 20, 43, "Input",
+ InitializationCell->True],
+Cell[23541, 771, 1337, 36, 103, "Input",
+ InitializationCell->True]
+}, Open  ]]
+}, Open  ]],
+Cell[24905, 811, 79, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[24987, 814, 87, 1, 26, "Subsection",
+ InitializationCell->True],
+Cell[CellGroupData[{
+Cell[25099, 819, 72, 1, 26, "Subsection",
+ InitializationCell->True],
+Cell[25174, 822, 49, 1, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25260, 828, 73, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[25336, 831, 99, 1, 27, "Input",
+ InitializationCell->True]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25472, 837, 72, 1, 34, "Subsection",
+ InitializationCell->True],
+Cell[25547, 840, 56, 1, 27, "Input",
+ InitializationCell->True]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
