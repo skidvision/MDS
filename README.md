@@ -1,6 +1,6 @@
 # MDS
 
-*v1.0*
+## Version 1.0, May 2020
 
 Legacy multidimensional scaling package for Mathematica.
 
@@ -8,9 +8,9 @@ Copyright 1999-2020 Flip Phillips.
 
 ## Notes
 
-Note that the `install.sh` is idiosyncratic to my setup and likely will destroy things in your universe. To install, just drop this directory into your `FileNameJoin[{$UserBaseDirectory, "Applications"}]` and you should be good to go.
+Note that the `install.sh` in `_Attic` is idiosyncratic to my setup and likely will destroy things in your universe. To install, just drop this directory into your `FileNameJoin[{$UserBaseDirectory, "Applications"}]` and you should be good to go.
 
-I'm not 100% this still even works well. The code is very much procedural and doesn't take advantage of anything new in the Wolfram Language since version 7 or 8. 
+I'm not 100% this still even works well. The code is very much procedural and doesn't take advantage of anything new in the Wolfram Language since version 7 or 8.
 
 At some point I will modernize it but, for now here it is.
 
@@ -30,4 +30,3 @@ Example data is from an experiment Farley Norman and I did a long time ago?
 ```
 
 Hey- why am I not cited in there?
-
